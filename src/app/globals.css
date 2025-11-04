@@ -1,8 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light mode only - Pastel color palette */
+  --background: #fdfbf8;
+  --foreground: #2d2d2d;
+
+  /* Pastel colors */
+  --pastel-mint: #b4e7ce;
+  --pastel-mint-dark: #9dd4b8;
+  --pastel-pink: #ffc4d6;
+  --pastel-pink-dark: #ffabc4;
+  --pastel-blue: #a8d8ea;
+  --pastel-blue-dark: #8cc5db;
+  --pastel-yellow: #fff4b1;
+  --pastel-yellow-dark: #ffe99a;
+  --pastel-lavender: #d4b5ff;
+  --pastel-lavender-dark: #c19eff;
+  --pastel-peach: #ffd4b0;
+  --pastel-peach-dark: #ffbe8f;
+
+  /* Neutral pastels */
+  --neutral-50: #fafafa;
+  --neutral-100: #f5f5f5;
+  --neutral-200: #e5e5e5;
+  --neutral-300: #d4d4d4;
+  --neutral-400: #a3a3a3;
+  --neutral-500: #737373;
+  --neutral-600: #525252;
+  --neutral-700: #404040;
+  --neutral-800: #262626;
+  --neutral-900: #171717;
 }
 
 @theme inline {
@@ -10,17 +37,59 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Custom pastel colors */
+  --color-pastel-mint: var(--pastel-mint);
+  --color-pastel-mint-dark: var(--pastel-mint-dark);
+  --color-pastel-pink: var(--pastel-pink);
+  --color-pastel-pink-dark: var(--pastel-pink-dark);
+  --color-pastel-blue: var(--pastel-blue);
+  --color-pastel-blue-dark: var(--pastel-blue-dark);
+  --color-pastel-yellow: var(--pastel-yellow);
+  --color-pastel-yellow-dark: var(--pastel-yellow-dark);
+  --color-pastel-lavender: var(--pastel-lavender);
+  --color-pastel-lavender-dark: var(--pastel-lavender-dark);
+  --color-pastel-peach: var(--pastel-peach);
+  --color-pastel-peach-dark: var(--pastel-peach-dark);
+
+  /* Neutral colors */
+  --color-neutral-50: var(--neutral-50);
+  --color-neutral-100: var(--neutral-100);
+  --color-neutral-200: var(--neutral-200);
+  --color-neutral-300: var(--neutral-300);
+  --color-neutral-400: var(--neutral-400);
+  --color-neutral-500: var(--neutral-500);
+  --color-neutral-600: var(--neutral-600);
+  --color-neutral-700: var(--neutral-700);
+  --color-neutral-800: var(--neutral-800);
+  --color-neutral-900: var(--neutral-900);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--neutral-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neutral-300);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neutral-400);
 }
