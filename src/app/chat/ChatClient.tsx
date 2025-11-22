@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, Send, Check, X, BookOpen, Loader2 } from 'lucide-react'
+import { MessageCircle, Send, Check, X, BookOpen, Loader2, Archive } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -42,18 +42,21 @@ type ChatClientProps = {
   userId: string
   acceptedRequests: Request[]
   pendingRequests: Request[]
+  completedRequests: Request[]
 }
 
 export default function ChatClient({
   userId,
   acceptedRequests,
   pendingRequests,
+  completedRequests,
 }: ChatClientProps) {
   const [selectedRequest, setSelectedRequest] = useState<Request | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [sendingMessage, setSendingMessage] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const supabase = createClient()
@@ -184,18 +187,64 @@ export default function ChatClient({
     }
   }
 
+  const handleCompleteRequest = async (requestId: string) => {
+    if (!confirm('Mark this chat as completed? You can view it in the archived section.')) return
+
+    try {
+      const { error } = await supabase
+        .from('book_requests')
+        .update({ status: 'completed' })
+        .eq('id', requestId)
+
+      if (error) throw error
+
+      alert('Chat archived successfully!')
+      setSelectedRequest(null)
+      router.refresh()
+    } catch (err: any) {
+      alert(err.message || 'Failed to archive chat')
+    }
+  }
+
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 h-[calc(100vh-5rem)]">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
-       
+
         <div className="md:col-span-1 bg-white rounded-3xl shadow-lg p-6 overflow-y-auto">
           <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center gap-2">
             <MessageCircle className="w-6 h-6" />
             Chats & Requests
           </h2>
 
-        
-          {pendingRequests.length > 0 && (
+          {/* Toggle between Active and Archived */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setShowArchived(false)}
+              className={`flex-1 px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
+                !showArchived
+                  ? 'bg-gradient-to-r from-pastel-mint to-pastel-blue text-white'
+                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+              }`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setShowArchived(true)}
+              className={`flex-1 px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
+                showArchived
+                  ? 'bg-gradient-to-r from-pastel-mint to-pastel-blue text-white'
+                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-1">
+                <Archive className="w-4 h-4" />
+                Archived
+              </div>
+            </button>
+          </div>
+
+
+          {!showArchived && pendingRequests.length > 0 && (
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-neutral-500 mb-3 uppercase">
                 Pending Requests
@@ -250,8 +299,8 @@ export default function ChatClient({
             </div>
           )}
 
-          
-          {acceptedRequests.length > 0 ? (
+
+          {!showArchived && acceptedRequests.length > 0 ? (
             <div>
               <h3 className="text-sm font-semibold text-neutral-500 mb-3 uppercase">
                 Active Chats
@@ -298,7 +347,7 @@ export default function ChatClient({
                 })}
               </div>
             </div>
-          ) : pendingRequests.length === 0 ? (
+          ) : !showArchived && pendingRequests.length === 0 ? (
             <div className="text-center py-8">
               <MessageCircle className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
               <p className="text-neutral-500">No chats yet</p>
@@ -307,25 +356,96 @@ export default function ChatClient({
               </p>
             </div>
           ) : null}
+
+          {/* Archived Chats */}
+          {showArchived && completedRequests.length > 0 ? (
+            <div>
+              <h3 className="text-sm font-semibold text-neutral-500 mb-3 uppercase">
+                Archived Chats
+              </h3>
+              <div className="space-y-2">
+                {completedRequests.map((request) => {
+                  const otherUser =
+                    request.requester_id === userId ? request.owner : request.requester
+                  const isSelected = selectedRequest?.id === request.id
+
+                  return (
+                    <motion.div
+                      key={request.id}
+                      onClick={() => setSelectedRequest(request)}
+                      className={`p-4 rounded-2xl cursor-pointer transition-colors ${
+                        isSelected
+                          ? 'bg-gradient-to-r from-pastel-mint to-pastel-blue text-white'
+                          : 'bg-neutral-50 hover:bg-neutral-100'
+                      }`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                            isSelected
+                              ? 'bg-white text-pastel-blue'
+                              : 'bg-gradient-to-br from-neutral-400 to-neutral-500 text-white'
+                          }`}
+                        >
+                          {otherUser?.full_name.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                        <div className="flex-1">
+                          <p className={`font-medium text-sm ${isSelected ? 'text-white' : 'text-foreground'}`}>
+                            {otherUser?.full_name}
+                          </p>
+                          <p className={`text-xs ${isSelected ? 'text-white/80' : 'text-neutral-500'}`}>
+                            {request.book.title}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : showArchived ? (
+            <div className="text-center py-8">
+              <Archive className="w-12 h-12 text-neutral-300 mx-auto mb-3" />
+              <p className="text-neutral-500">No archived chats</p>
+              <p className="text-neutral-400 text-sm mt-1">
+                Completed chats will appear here
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <div className="md:col-span-2 bg-white rounded-3xl shadow-lg flex flex-col overflow-hidden">
           {selectedRequest ? (
             <>
-          
+
               <div className="p-6 border-b border-neutral-200 bg-gradient-to-r from-pastel-mint/10 to-pastel-blue/10">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-pastel-yellow to-pastel-peach rounded-2xl flex items-center justify-center">
-                    <BookOpen className="w-6 h-6 text-white" />
+                <div className="flex items-center gap-4 justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-pastel-yellow to-pastel-peach rounded-2xl flex items-center justify-center">
+                      <BookOpen className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg text-foreground">
+                        {selectedRequest.book.title}
+                      </h3>
+                      <p className="text-sm text-neutral-600">
+                        Chatting about {selectedRequest.request_type}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-foreground">
-                      {selectedRequest.book.title}
-                    </h3>
-                    <p className="text-sm text-neutral-600">
-                      Chatting about {selectedRequest.request_type}
-                    </p>
-                  </div>
+                  {selectedRequest.status === 'accepted' && (
+                    <motion.button
+                      onClick={() => handleCompleteRequest(selectedRequest.id)}
+                      className="px-4 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-medium text-sm flex items-center gap-2 transition-colors"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Archive className="w-4 h-4" />
+                      Archive
+                    </motion.button>
+                  )}
                 </div>
               </div>
 

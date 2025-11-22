@@ -57,6 +57,31 @@ export default async function ChatPage() {
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
 
+  // Fetch completed requests where user is involved
+  const { data: completedRequests } = await supabase
+    .from('book_requests')
+    .select(`
+      *,
+      book:book_id (
+        id,
+        title,
+        image_url
+      ),
+      requester:requester_id (
+        id,
+        full_name,
+        avatar_url
+      ),
+      owner:owner_id (
+        id,
+        full_name,
+        avatar_url
+      )
+    `)
+    .eq('status', 'completed')
+    .or(`requester_id.eq.${user.id},owner_id.eq.${user.id}`)
+    .order('updated_at', { ascending: false })
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pastel-blue/10 via-pastel-mint/10 to-pastel-lavender/10">
       <Navbar />
@@ -64,6 +89,7 @@ export default async function ChatPage() {
         userId={user.id}
         acceptedRequests={acceptedRequests || []}
         pendingRequests={pendingRequests || []}
+        completedRequests={completedRequests || []}
       />
     </div>
   )
