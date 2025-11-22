@@ -13,7 +13,7 @@ export default async function MarketplacePage() {
   }
 
   // Fetch all books except user's own books
-  const { data: books } = await supabase
+  const { data: books, error } = await supabase
     .from('books')
     .select(`
       *,
@@ -26,6 +26,10 @@ export default async function MarketplacePage() {
     .neq('user_id', user.id)
     .eq('status', 'available')
     .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching books:', error)
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pastel-pink/10 via-pastel-lavender/10 to-pastel-blue/10">

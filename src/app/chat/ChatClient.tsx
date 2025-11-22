@@ -34,6 +34,7 @@ type Message = {
   id: string
   message: string
   sender_id: string
+  receiver_id: string
   created_at: string
 }
 
@@ -73,7 +74,12 @@ export default function ChatClient({
             filter: `request_id=eq.${selectedRequest.id}`,
           },
           (payload) => {
-            setMessages((prev) => [...prev, payload.new as Message])
+            const newMessage = payload.new as Message
+            // Avoid duplicates - only add if message doesn't already exist
+            setMessages((prev) => {
+              const exists = prev.some((msg) => msg.id === newMessage.id)
+              return exists ? prev : [...prev, newMessage]
+            })
           }
         )
         .subscribe()
@@ -92,13 +98,16 @@ export default function ChatClient({
     if (!selectedRequest) return
 
     setLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('chat_messages')
       .select('*')
       .eq('request_id', selectedRequest.id)
       .order('created_at', { ascending: true })
 
-    if (data) {
+    if (error) {
+      console.error('Error loading messages:', error)
+      alert('Failed to load messages: ' + error.message)
+    } else if (data) {
       setMessages(data)
     }
     setLoading(false)
@@ -119,14 +128,23 @@ export default function ChatClient({
         : selectedRequest.requester_id
 
     try {
-      const { error } = await supabase.from('chat_messages').insert({
-        request_id: selectedRequest.id,
-        sender_id: userId,
-        receiver_id: otherUserId,
-        message: newMessage.trim(),
-      })
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .insert({
+          request_id: selectedRequest.id,
+          sender_id: userId,
+          receiver_id: otherUserId,
+          message: newMessage.trim(),
+        })
+        .select()
+        .single()
 
       if (error) throw error
+
+      // Immediately add the message to local state for instant display
+      if (data) {
+        setMessages((prev) => [...prev, data])
+      }
 
       setNewMessage('')
     } catch (err: any) {

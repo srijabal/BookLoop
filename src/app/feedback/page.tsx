@@ -31,6 +31,12 @@ export default async function FeedbackPage() {
     `)
     .order('created_at', { ascending: false })
 
+  // Fetch all available books for review selection
+  const { data: allBooks } = await supabase
+    .from('books')
+    .select('id, title, author, image_url')
+    .order('title', { ascending: true })
+
   // Fetch user stats for leaderboard
   const { data: userStats } = await supabase
     .from('profiles')
@@ -59,7 +65,7 @@ export default async function FeedbackPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pastel-peach/10 via-pastel-pink/10 to-pastel-lavender/10">
       <Navbar />
-      <FeedbackClient userId={user.id} reviews={reviews || []} leaderboard={stats} />
+      <FeedbackClient userId={user.id} reviews={reviews || []} leaderboard={stats} allBooks={allBooks || []} />
     </div>
   )
 }

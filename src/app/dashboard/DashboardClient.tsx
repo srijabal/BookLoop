@@ -200,7 +200,7 @@ export default function DashboardClient({ profile, books }: DashboardClientProps
                   {book.available_for_sale && (
                     <span className="text-xs bg-pastel-pink text-white px-3 py-1 rounded-full flex items-center gap-1">
                       <ShoppingCart className="w-3 h-3" />
-                      ${book.price}
+                      ₹{book.price}
                     </span>
                   )}
                 </div>

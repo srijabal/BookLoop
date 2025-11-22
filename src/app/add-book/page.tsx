@@ -300,7 +300,7 @@ export default function AddBookPage() {
                 exit={{ opacity: 0, height: 0 }}
               >
                 <label htmlFor="price" className="block text-sm font-medium text-neutral-700 mb-2">
-                  Sale Price ($) *
+                  Sale Price (₹) *
                 </label>
                 <input
                   id="price"

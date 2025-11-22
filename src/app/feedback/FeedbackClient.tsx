@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Heart, MessageCircle, Star, Trophy, Medal, Award, BookOpen } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Heart, MessageCircle, Star, Trophy, Medal, Award, BookOpen, Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -34,15 +34,28 @@ type LeaderboardUser = {
   bookCount: number
 }
 
+type BookOption = {
+  id: string
+  title: string
+  author: string
+  image_url: string | null
+}
+
 type FeedbackClientProps = {
   userId: string
   reviews: Review[]
   leaderboard: LeaderboardUser[]
+  allBooks: BookOption[]
 }
 
-export default function FeedbackClient({ userId, reviews, leaderboard }: FeedbackClientProps) {
+export default function FeedbackClient({ userId, reviews, leaderboard, allBooks }: FeedbackClientProps) {
   const [activeTab, setActiveTab] = useState<'reviews' | 'leaderboard'>('reviews')
   const [likedReviews, setLikedReviews] = useState<Set<string>>(new Set())
+  const [showReviewModal, setShowReviewModal] = useState(false)
+  const [selectedBookId, setSelectedBookId] = useState('')
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -64,6 +77,38 @@ export default function FeedbackClient({ userId, reviews, leaderboard }: Feedbac
     }
   }
 
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedBookId || rating === 0) {
+      alert('Please select a book and rating')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const { error } = await supabase.from('reviews').insert({
+        book_id: selectedBookId,
+        user_id: userId,
+        rating,
+        comment: comment.trim() || null,
+        likes_count: 0,
+      })
+
+      if (error) throw error
+
+      alert('Review submitted successfully!')
+      setShowReviewModal(false)
+      setSelectedBookId('')
+      setRating(0)
+      setComment('')
+      router.refresh()
+    } catch (err: any) {
+      alert(err.message || 'Failed to submit review')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const getMedalIcon = (index: number) => {
     if (index === 0) return <Trophy className="w-6 h-6 text-yellow-500" />
     if (index === 1) return <Medal className="w-6 h-6 text-gray-400" />
@@ -77,10 +122,21 @@ export default function FeedbackClient({ userId, reviews, leaderboard }: Feedbac
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
+        className="mb-8 flex items-center justify-between"
       >
-        <h1 className="text-3xl font-bold text-foreground mb-2">Community Hub</h1>
-        <p className="text-neutral-600">Explore reviews and top contributors</p>
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Community Hub</h1>
+          <p className="text-neutral-600">Explore reviews and top contributors</p>
+        </div>
+        <motion.button
+          onClick={() => setShowReviewModal(true)}
+          className="px-6 py-3 rounded-2xl bg-gradient-to-r from-pastel-pink to-pastel-lavender text-white font-semibold shadow-lg flex items-center gap-2"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Plus className="w-5 h-5" />
+          Write Review
+        </motion.button>
       </motion.div>
 
       {/* Tabs */}
@@ -284,6 +340,128 @@ export default function FeedbackClient({ userId, reviews, leaderboard }: Feedbac
           )}
         </div>
       )}
+
+      {/* Write Review Modal */}
+      <AnimatePresence>
+        {showReviewModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowReviewModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-foreground">Write a Review</h2>
+                <button
+                  onClick={() => setShowReviewModal(false)}
+                  className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmitReview} className="space-y-6">
+                {/* Book Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Select Book *
+                  </label>
+                  <select
+                    value={selectedBookId}
+                    onChange={(e) => setSelectedBookId(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 rounded-2xl border-2 border-neutral-200 focus:border-pastel-pink focus:outline-none transition-colors"
+                  >
+                    <option value="">Choose a book...</option>
+                    {allBooks.map((book) => (
+                      <option key={book.id} value={book.id}>
+                        {book.title} by {book.author}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Rating */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Rating *
+                  </label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRating(star)}
+                        className="transition-transform hover:scale-110"
+                      >
+                        <Star
+                          className={`w-10 h-10 ${
+                            star <= rating
+                              ? 'fill-pastel-yellow text-pastel-yellow'
+                              : 'text-neutral-300'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-sm text-neutral-500 mt-1">
+                    {rating === 0 && 'Click to rate'}
+                    {rating === 1 && 'Poor'}
+                    {rating === 2 && 'Fair'}
+                    {rating === 3 && 'Good'}
+                    {rating === 4 && 'Very Good'}
+                    {rating === 5 && 'Excellent'}
+                  </p>
+                </div>
+
+                {/* Comment */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Your Review (Optional)
+                  </label>
+                  <textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Share your thoughts about this book..."
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-2xl border-2 border-neutral-200 focus:border-pastel-pink focus:outline-none transition-colors resize-none"
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex gap-3">
+                  <motion.button
+                    type="button"
+                    onClick={() => setShowReviewModal(false)}
+                    className="flex-1 px-6 py-3 rounded-2xl border-2 border-neutral-200 text-neutral-600 font-semibold hover:bg-neutral-50 transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    type="submit"
+                    disabled={submitting || !selectedBookId || rating === 0}
+                    className="flex-1 px-6 py-3 rounded-2xl bg-gradient-to-r from-pastel-pink to-pastel-lavender text-white font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    whileHover={{ scale: submitting ? 1 : 1.02 }}
+                    whileTap={{ scale: submitting ? 1 : 0.98 }}
+                  >
+                    {submitting ? 'Submitting...' : 'Submit Review'}
+                  </motion.button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   )
 }

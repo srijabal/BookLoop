@@ -274,7 +274,7 @@ export default function MarketplaceClient({ books, userId }: MarketplaceClientPr
                       whileTap={{ scale: 0.98 }}
                     >
                       <ShoppingCart className="w-4 h-4" />
-                      Buy for ${book.price}
+                      Buy for ₹{book.price}
                     </motion.button>
                   )}
                 </div>
