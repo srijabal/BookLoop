@@ -292,7 +292,7 @@ export default function EditBookClient({ book }: { book: Book }) {
                 animate={{ opacity: 1, height: 'auto' }}
               >
                 <label htmlFor="price" className="block text-sm font-medium text-neutral-700 mb-2">
-                  Sale Price ($) *
+                  Sale Price (₹) *
                 </label>
                 <input
                   id="price"

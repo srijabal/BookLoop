@@ -276,10 +276,6 @@ export default function ProfileClient({ profile }: { profile: Profile | null }) 
             <p>
               <span className="font-medium">Account ID:</span> {profile.id.slice(0, 8)}...
             </p>
-            <p>
-              <span className="font-medium">Member Since:</span>{' '}
-              {new Date().toLocaleDateString()}
-            </p>
           </div>
         </div>
       </motion.div>

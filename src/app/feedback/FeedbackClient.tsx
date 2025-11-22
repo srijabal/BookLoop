@@ -214,9 +214,6 @@ export default function FeedbackClient({ userId, reviews, leaderboard, allBooks 
                         <p className="font-semibold text-foreground">
                           {review.profile.full_name}
                         </p>
-                        <p className="text-xs text-neutral-500">
-                          {new Date(review.created_at).toLocaleDateString()}
-                        </p>
                       </div>
                     </div>
 
